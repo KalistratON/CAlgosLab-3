@@ -1,198 +1,98 @@
 #pragma once
 
-#include <algorithm> // для swap
-#include <iterator>  // для distance
+#include <algorithm>
+#include <iterator>
 
-using namespace std;
-
-template<typename T, typename Comp>
-T& select_reference_element_as_median(T* first, T* mid, T* last, Comp comp)
-{
-    if (comp(*mid, *first)) 
-    {
-        T helper = move(*mid);
-        *mid = move(*first);
-        *first = move(helper);
-    }
-
-    if (comp(*last, *mid)) 
-    {
-        T helper = move(*last);
-        *last = move(*mid);
-        *mid = move(helper);
-    }
-
-    if (comp(*last, *first)) 
-    {
-        T helper = move(*last);
-        *last = move(*first);
-        *first = move(helper);
-    }
-
-    return *mid;
-}
-
-// Наихудший случай для сортировки вставками — это массив, отсортированный в обратном порядке. 
-// В этом случае для каждого элемента нужно выполнить наибольшее количество операций по сдвигу элементов. 
-// Тестирование на таком массиве позволяет выявить худшую производительность, что важно для выбора оптимального порога при гибридной сортировке.
-template<typename T, typename Comp>
-void insertion_sort(T* first, T* last, Comp comp)
-{
-    for (T* i = first + 1; i < last; ++i)
-    {
-        T value = move(*i);
-        T* helper = i;
-
-        // Сдвигаем элементы вправо, пока не найдём место для вставки текущего
-        while (helper > first && comp(value, *(helper - 1)))
-        {
-            *helper = move(*(helper - 1));
-            --helper;
-        }
-
-        // Вставляем сохранённый элемент на правильное место
-        *helper = move(value);
-    }
-}
-
-// Функция для вычисления коэффициента нарушений убывающего порядка
-template<typename T, typename Comp>
-double violation_coeff(T* first, T* last, Comp comp) 
-{
-    int violations = 0;
-
-    for (T* it = first + 1; it < last; ++it) {
-        if (comp(*(it - 1), *it)) {  // Если порядок убывания нарушен
-            ++violations;
-        }
-    }
-
-    return static_cast<double>(violations) / (distance(first, last) - 1);
-}
 
 template<typename T, typename Comp>
-void quick_sort(T* first, T* last, Comp comp) 
+void InsertionSort (T* theFirst, T* theLast, Comp theComp)
 {
-    // Граница, при которой используется сортировка вставками
-    constexpr int treshold = 30;
-
-    while (distance(first, last) > 1) 
-    {
-        int size = distance(first, last);
-        
-        if (size <= treshold)
-        {
-            // Запускать одно из двух
-            if (violation_coeff(first, last, comp) > 0.1)
-            {
-                insertion_sort(first, last, comp);
-                return;
-            }
-
-            //insertion_sort(first, last, comp);
+    for (T* i = theFirst + 1; i < theLast; ++i) {
+        T aValue = std::move (*i);
+        T* j = i - 1;
+        while (j >= theFirst && theComp (aValue, *j)) {
+            *(j + 1) = std::move (*j);
+            --j;
         }
-
-        T reference_element = select_reference_element_as_median(first, first + size / 2, last - 1, comp);
-
-        T* left = first;
-        T* right = last - 1;
-
-        while (true) 
-        {
-            // Проверяем, является ли текущий элемент меньше опорного элемента.
-            // Если условие выполняется, то элемент уже находится на своём месте.
-            // Цикл останавливается, когда находим элемент, который должен быть справа.
-            while (comp(*left, reference_element)) {
-                ++left;
-            }
-
-            // Аналогично рассуждениям выше
-            while (comp(reference_element, *right)) {
-                --right; 
-            }
-
-           // Если указатели left и right пересеклись или встретились, то слева от left — меньше или равны опорному элементу
-           // и cправа от right — больше или равны опорному элементу
-            if (left >= right) {
-                break;
-            }
-
-            // Меняем местами элементы, которые находятся "не на своих местах"
-            T helper = move(*left);
-            *left = move(*right);
-            *right = move(helper);
-
-            // Теперь нужно:
-            // 1) Пропустить уже обработанные элементы.
-            // 2) Переместить указатели к следующим элементам, которые нужно проверить.
-            ++left;
-            --right;
-        }
-
-        //После завершения цикла left указывает на первый элемент правого подмассива.
-        // Таким образом: [first, mid) — подмассив элементов, меньших или равных опорному.
-        // [mid, last) — подмассив элементов, больших или равных опорному.
-        T* mid = left;
-
-        // Сортируем меньший интервал рекурсивно и продолжаем итеративно сортировать больший интервал
-        if (distance(first, mid) < distance(mid, last)) 
-        {
-            quick_sort(first, mid, comp);
-            first = mid;
-        }
-        else 
-        {
-            quick_sort(mid, last, comp);
-            last = mid;
-        }
+        *(j + 1) = std::move (aValue);
     }
 }
 
 template<typename T, typename Comp>
-void classic_quick_sort(T* first, T* last, Comp comp)
+T& GetPivot (T* theFirst, T* theMid, T* theLast, Comp theComp)
 {
-    while (distance(first, last) > 1)
-    {
-        int size = distance(first, last);
+    if (theComp (*theMid, *theFirst)) {
+        std::swap (*theFirst, *theMid);
+    }
 
-        T reference_element = select_reference_element_as_median(first, first + size / 2, last - 1, comp);
+    if (theComp (*theLast, *theMid)) {
+        std::swap (*theLast, *theMid);
+    }
 
-        T* left = first;
-        T* right = last - 1;
+    if (theComp (*theLast, *theFirst))  {
+        std::swap (*theLast, *theFirst);
+    }
+    return *theMid;
+}
 
-        while (true)
-        {
-            while (comp(*left, reference_element)) {
-                ++left;
-            }
+template<typename T, typename Comp>
+T* Partition (T* theFirst, T* theLast, Comp theComp)
+{
+    int aSize = std::distance (theFirst, theLast);
+    T aRefElement = GetPivot (theFirst, theFirst + aSize / 2, theLast - 1, theComp);
 
-            while (comp(reference_element, *right)) {
-                --right;
-            }
+    T* aLeft = theFirst;
+    T* aRight = theLast - 1;
 
-            if (left >= right) {
-                break;
-            }
-
-            T helper = move(*left);
-            *left = move(*right);
-            *right = move(helper);
-
-            ++left;
-            --right;
+    while (theComp (*aLeft, *aRight)) {
+        while (theComp (*aLeft, aRefElement)) {
+            ++aLeft;
         }
 
-        T* mid = left;
-
-        if (distance(first, mid) < distance(mid, last))
-        {
-            classic_quick_sort(first, mid, comp);
-            first = mid;
+        while (theComp (aRefElement, *aRight)) {
+            --aRight;
         }
-        else
-        {
-            classic_quick_sort(mid, last, comp);
-            last = mid;
+
+        if (aLeft < aRight) {
+            std::swap (*aLeft, *aRight);
+        }
+    }
+    return aLeft;
+}
+
+template<typename T, typename Comp>
+void QuickSort (T* theFirst, T* theLast, Comp theComp) 
+{
+    const int aTreshold = 5;
+    int aSize = std::distance (theFirst, theLast);
+    while (aSize > 1) {
+        if (aSize <= aTreshold) {
+            return InsertionSort (theFirst, theLast, theComp);
+        }
+
+        T* aMid = Partition (theFirst, theLast, theComp);
+        if (std::distance (theFirst, aMid) < std::distance (aMid, theLast)) {
+            QuickSort (theFirst, aMid, theComp);
+            theFirst = aMid;
+        } else {
+            QuickSort (aMid, theLast, theComp);
+            theLast = aMid;
+        }
+        aSize = std::distance (theFirst, theLast);
+    }
+}
+
+template<typename T, typename Comp>
+void СlassicQuickSort (T* theFirst, T* theLast, Comp theComp)
+{
+    while (std::distance (theFirst, theLast) > 1) {
+        T* aMid = Partition (theFirst, theLast, theComp);
+        if (std::distance (theFirst, aMid) < std::distance (aMid, theLast)) {
+            СlassicQuickSort (theFirst, aMid, theComp);
+            theFirst = aMid;
+        } else {
+            СlassicQuickSort (aMid, theLast, theComp);
+            theLast = aMid;
         }
     }
 }
