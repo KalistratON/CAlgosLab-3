@@ -1,4 +1,4 @@
-#include "Quick_sort.h"
+#include "SortAlgo.h"
 
 #include <gtest/gtest.h>
 #include <gmock/gmock.h>
